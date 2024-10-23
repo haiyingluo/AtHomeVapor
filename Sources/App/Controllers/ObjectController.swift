@@ -14,6 +14,7 @@ struct ObjectController: RouteCollection {
         let objects = routes.grouped("objects")
        
         objects.get(use: self.index)
+        objects.get("spaces", ":spaceName", use: self.getObjectBySpace)
         objects.post(use: self.create)
         objects.group(":objectID") { object in
             object.delete(use: self.delete)
@@ -41,5 +42,17 @@ struct ObjectController: RouteCollection {
         }
         try await object.delete(on: req.db)
         return .noContent
+    }
+    
+    @Sendable
+    func getObjectBySpace(req: Request) async throws -> [ObjectModel] {
+        guard let spaceName = req.parameters.get("spaceName") else {
+            throw Abort(.badRequest, reason: "Nom de la pièce manquant")
+        }
+        if let sql = req.db as? SQLDatabase {
+            let objects = try await sql.raw("SELECT obj.* FROM object obj JOIN space_own_object spa ON obj.id_object = spa.id_object JOIN space sp ON spa.id_space = sp.id_space WHERE sp.name_space = \(bind: spaceName)").all(decodingFluent: ObjectModel.self)
+            return objects
+        }
+        throw Abort(.internalServerError, reason: "La base de données n'est pas SQL.")
     }
 }
