@@ -7,12 +7,16 @@
 
 import Vapor
 import Fluent
+import FluentSQL
 
 struct ScientificInfoController: RouteCollection {
     func boot(routes: any Vapor.RoutesBuilder) throws {
         let scientificInfoRoutes = routes.grouped("scientificInfos")
         scientificInfoRoutes.get(use: indexScientificInfo)
         scientificInfoRoutes.post(use: createScientificInfo)
+        scientificInfoRoutes.group("object") { scientificInfoRoute in
+            scientificInfoRoute.get(":ByObjectID", use: getScientificInfoByID)
+        }
         scientificInfoRoutes.group(":ScientificInfoID") { scientificInfoRoute in
             scientificInfoRoute.get(use: getScientificInfoByID)
             scientificInfoRoute.delete(use: deleteScientificInfo)
@@ -74,5 +78,20 @@ struct ScientificInfoController: RouteCollection {
            try await scientificInfo.delete(on: req.db)
            return .noContent
        }
+    
+    // Récupérer le titre et le texte de toutes les infos scientifiques en fonction de l'id d'un objet
+    @Sendable
+    func getScientificInfoByObjectID(req: Request) async throws -> [ScientificInfo] {
+        guard let object = req.query["object"] as String? else {
+            throw Abort(.badRequest, reason: "Missing object ID")
+        }
+        if let sql = req.db as? SQLDatabase {
+            let objects = try await sql.raw("SELECT title_scientific_info, text_scientific_info FROM scientific_info WHERE id_scientific_info IN(id_object FROM object  WHERE id_object = \(bind: object))")
+                .all(decodingFluent: ScientificInfo.self)
+            
+                    return objects
+        }
+        throw Abort(.internalServerError, reason: "Database connection failed")
+    }
 
    }
