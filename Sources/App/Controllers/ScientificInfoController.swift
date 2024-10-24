@@ -15,7 +15,7 @@ struct ScientificInfoController: RouteCollection {
         scientificInfoRoutes.get(use: indexScientificInfo)
         scientificInfoRoutes.post(use: createScientificInfo)
         scientificInfoRoutes.group("object") { scientificInfoRoute in
-            scientificInfoRoute.get(":ByObjectID", use: getScientificInfoByID)
+            scientificInfoRoute.get(":ByObjectID", use: getScientificInfoByObjectID)
         }
         scientificInfoRoutes.group(":ScientificInfoID") { scientificInfoRoute in
             scientificInfoRoute.get(use: getScientificInfoByID)
@@ -82,13 +82,26 @@ struct ScientificInfoController: RouteCollection {
     // Récupérer le titre et le texte de toutes les infos scientifiques en fonction de l'id d'un objet
     @Sendable
     func getScientificInfoByObjectID(req: Request) async throws -> [ScientificInfo] {
-        guard let object = req.query["object"] as String? else {
+        print("Step01")
+        guard let object = req.parameters.get("ByObjectID") as String? else {
+            print("Step02")
             throw Abort(.badRequest, reason: "Missing object ID")
         }
         if let sql = req.db as? SQLDatabase {
-            let objects = try await sql.raw("SELECT title_scientific_info, text_scientific_info FROM scientific_info WHERE id_scientific_info IN(id_object FROM object  WHERE id_object = \(bind: object))")
-                .all(decodingFluent: ScientificInfo.self)
-            
+            print("SELECT * FROM scientific_info WHERE id_object = \(object)")
+            let objects = try await sql.raw("""
+                SELECT * FROM scientific_info 
+                WHERE id_object IN (SELECT id_object FROM object WHERE name_object = \(bind: object))
+            """).all(decodingFluent: ScientificInfo.self)
+
+//            let objects = try await sql.raw("""
+//                SELECT * FROM scientific_info 
+//                WHERE id_object IN (SELECT id_object FROM object WHERE name_object = \(bind: object)
+//            """).all(decodingFluent: ScientificInfo.self)
+
+//            let objects = try await sql.raw("SELECT * FROM scientific_info WHERE id_object IN(SELECT id_object FROM object WHERE name_object = \(bind: "Tasse")")
+//                .all(decodingFluent: ScientificInfo.self)
+//            print("Step03")
                     return objects
         }
         throw Abort(.internalServerError, reason: "Database connection failed")
