@@ -61,8 +61,8 @@ struct ScientificInfoController: RouteCollection {
                throw Abort(.notFound, reason: "ScientificInfo non trouvé")
            }
 
-           scientificInfo.title_scientific_info = updatedScientificInfo.title_scientific_info
-           scientificInfo.text_scientific_info = updatedScientificInfo.text_scientific_info
+           scientificInfo.title = updatedScientificInfo.title
+           scientificInfo.text = updatedScientificInfo.text
 
            try await scientificInfo.save(on: req.db)
            return scientificInfo
@@ -79,7 +79,7 @@ struct ScientificInfoController: RouteCollection {
            return .noContent
        }
     
-    // Récupérer le titre et le texte de toutes les infos scientifiques en fonction de l'id d'un objet
+    // Récupérer le titre et le texte de toutes les infos scientifiques en fonction du nom d'un objet
     @Sendable
     func getScientificInfoByObjectID(req: Request) async throws -> [ScientificInfo] {
         print("Step01")
@@ -94,14 +94,6 @@ struct ScientificInfoController: RouteCollection {
                 WHERE id_object IN (SELECT id_object FROM object WHERE name_object = \(bind: object))
             """).all(decodingFluent: ScientificInfo.self)
 
-//            let objects = try await sql.raw("""
-//                SELECT * FROM scientific_info 
-//                WHERE id_object IN (SELECT id_object FROM object WHERE name_object = \(bind: object)
-//            """).all(decodingFluent: ScientificInfo.self)
-
-//            let objects = try await sql.raw("SELECT * FROM scientific_info WHERE id_object IN(SELECT id_object FROM object WHERE name_object = \(bind: "Tasse")")
-//                .all(decodingFluent: ScientificInfo.self)
-//            print("Step03")
                     return objects
         }
         throw Abort(.internalServerError, reason: "Database connection failed")

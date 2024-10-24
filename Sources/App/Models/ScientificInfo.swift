@@ -15,10 +15,10 @@ final class ScientificInfo: Model, Content,@unchecked Sendable {
     var id: UUID?
     
     @Field(key: "title_scientific_info")
-    var title_scientific_info: String
+    var title: String
     
     @Field(key: "text_scientific_info")
-    var text_scientific_info: String
+    var text: String
     
     @Field(key: "id_object")
     var id_object: UUID
