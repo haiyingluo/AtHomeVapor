@@ -8,6 +8,7 @@ public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.http.server.configuration.port = 8081
+    app.http.server.configuration.hostname = "0.0.0.0"
     
     app.databases.use(DatabaseConfigurationFactory.mysql(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -18,7 +19,7 @@ public func configure(_ app: Application) async throws {
     ), as: .mysql)
     
     // codes pour trouver les chemins des sous dossiers de Public
-   let fileMiddleware = FileMiddleware(publicDirectory: app.directory.publicDirectory)
+    let fileMiddleware = FileMiddleware(publicDirectory: app.directory.publicDirectory)
     app.middleware.use(fileMiddleware)
     
     
