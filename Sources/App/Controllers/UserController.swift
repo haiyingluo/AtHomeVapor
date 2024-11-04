@@ -11,36 +11,43 @@ import FluentSQL
 struct UserController: RouteCollection {
     func boot(routes: any Vapor.RoutesBuilder) throws {
         let users = routes.grouped("users")
-        users.get(use: index)
         users.post(use: create)
+        
+        let authGroupBasic = users.grouped(User.authenticator(), User.guardMiddleware())
+        authGroupBasic.post("login",use: login)
+        
+        let authGroupToken = users.grouped(TokenSession.authenticator(), TokenSession.guardMiddleware())
+        authGroupToken.get(use: index)
+        
         //http://127.0.0.1:8081/users/byemail/?email=pierre@gmail.com
         //users.get("byemail", use: self.getUserByEmail)
         //http://127.0.0.1:8081/users/byemail/pierre@gmail.com
-        users.group("byemail") { user in
+        authGroupToken.group("byemail") { user in
             user.get(":email", use: getUserByEmail)
         }
-        users.group(":userID") { user in
+        
+        authGroupToken.group(":userID") { user in
             user.get(use: getUserById)
             user.delete(use: delete)
             user.put(use: update)
         }
     }
     
-    @Sendable
-    func index(req: Request) async throws -> [UserDTO] {
+    @Sendable func index(req: Request) async throws -> [UserDTO] {
         let users = try await User.query(on: req.db).all()
         return users.map { $0.toDTO() }
     }
     
-    @Sendable
-    func create(req: Request) async throws -> UserDTO {
+    @Sendable func create(req: Request) async throws -> UserDTO {
         let user = try req.content.decode(User.self)
+        
+        user.password = try Bcrypt.hash(user.password)
+        
         try await user.save(on: req.db)
         return user.toDTO()
     }
     
-    @Sendable
-    func getUserById(req: Request) async throws -> UserDTO {
+    @Sendable func getUserById(req: Request) async throws -> UserDTO {
         guard let user = try await
             User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
@@ -48,8 +55,7 @@ struct UserController: RouteCollection {
         return user.toDTO()
     }
     
-    @Sendable
-    func delete(req: Request) async throws -> HTTPStatus{
+    @Sendable func delete(req: Request) async throws -> HTTPStatus{
         guard let user = try await
             User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
@@ -59,8 +65,7 @@ struct UserController: RouteCollection {
         return .noContent
     }
     
-    @Sendable
-    func update(req: Request) async throws -> UserDTO {
+    @Sendable func update(req: Request) async throws -> UserDTO {
        guard let userIDString = req.parameters.get("userID"),
               let userID = UUID(uuidString: userIDString) else {
            throw Abort(.badRequest, reason: "userID is not valid")
@@ -82,8 +87,7 @@ struct UserController: RouteCollection {
         return user.toDTO()
     }
     
-    @Sendable
-    func getUserByEmail(req: Request) async throws -> UserDTO {
+    @Sendable func getUserByEmail(req: Request) async throws -> UserDTO {
         //http://127.0.0.1:8081/users/byemail/?email=pierre@gmail.com
         //guard let email = req.query["email"] as String? else {
         //http://127.0.0.1:8081/users/byemail/pierre@gmail.com
@@ -100,5 +104,12 @@ struct UserController: RouteCollection {
             return user.toDTO()
         }
         throw Abort(.internalServerError, reason: "Database is not SQL")
+    }
+    
+    @Sendable func login(req: Request) async throws -> [String:String] {
+        let user = try req.auth.require(User.self)
+        let payload = try TokenSession(with: user)
+        let token = try await req.jwt.sign(payload)
+        return ["token": token]
     }
 }

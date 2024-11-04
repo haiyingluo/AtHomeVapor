@@ -2,13 +2,14 @@ import NIOSSL
 import Fluent
 import FluentMySQLDriver
 import Vapor
+import JWT
 
 // configures your application
 public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.http.server.configuration.port = 8081
-    app.http.server.configuration.hostname = "0.0.0.0"
+//    app.http.server.configuration.hostname = "0.0.0.0"
     
     app.databases.use(DatabaseConfigurationFactory.mysql(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -22,6 +23,14 @@ public func configure(_ app: Application) async throws {
     let fileMiddleware = FileMiddleware(publicDirectory: app.directory.publicDirectory)
     app.middleware.use(fileMiddleware)
     
+    app.middleware.use(JSONMiddleware())
+    
+    guard let secret = Environment.get("SECRET_KEY") else {
+        fatalError("No SECRET_KEY environment variable set")
+    }
+    
+    let hmacKey = HMACKey(from: Data(secret.utf8))
+    await app.jwt.keys.add(hmac: hmacKey, digestAlgorithm: .sha256)
     
     try routes(app)
 }

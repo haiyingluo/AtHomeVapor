@@ -44,3 +44,12 @@ final class User: Model, @unchecked Sendable {
         return UserDTO(id: self.id, name: self.name, email: self.email, bestStreak: self.bestStreak, actualStreak: self.actualStreak)
     }
 }
+
+extension User : ModelAuthenticatable {
+    static let usernameKey = \User.$email
+    static let passwordHashKey = \User.$password
+    
+    func verify(password: String) throws -> Bool {
+        try Bcrypt.verify(password, created: self.password)
+    }
+}
