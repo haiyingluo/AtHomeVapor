@@ -38,13 +38,18 @@ struct UserController: RouteCollection {
         return users.map { $0.toDTO() }
     }
     
-    @Sendable func create(req: Request) async throws -> UserDTO {
+    @Sendable func create(req: Request) async throws -> HTTPStatus {
         let user = try req.content.decode(User.self)
+        
+        if user.password.count < 8 {
+            print("Error : Password too short")
+            return .badRequest
+        }
         
         user.password = try Bcrypt.hash(user.password)
         
         try await user.save(on: req.db)
-        return user.toDTO()
+        return .ok
     }
     
     @Sendable func getUserById(req: Request) async throws -> UserDTO {
