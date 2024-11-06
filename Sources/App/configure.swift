@@ -3,7 +3,7 @@ import Fluent
 import FluentMySQLDriver
 import Vapor
 import JWT
-//import GateKeeper
+import Gatekeeper
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -42,9 +42,9 @@ public func configure(_ app: Application) async throws {
     // Ajout du middleware CORS à l'application
     app.middleware.use(corsMiddleware)
     
-//    app.caches.use(.memory)
-//    app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
-//    app.middleware.user(GatekeeperMiddleware())
+    app.caches.use(.memory)
+    app.gatekeeper.config = .init(maxRequests: 5, per: .minute)
+    app.middleware.use(GatekeeperMiddleware())
     
     app.middleware.use(JSONMiddleware())
     
