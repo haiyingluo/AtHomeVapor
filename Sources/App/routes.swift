@@ -7,7 +7,19 @@ func routes(_ app: Application) throws {
     }
 
     app.get("hello") { req async -> String in
-        "Hello, world!"
+        "Hello ! C'est une requête GET"
+    }
+    
+    app.post("hello") { req async -> String in
+        "Hello ! C'est une requête POST"
+    }
+    
+    app.put("hello") { req async -> String in
+        "Hello ! C'est une requête PUT"
+    }
+    
+    app.delete("hello") { req async -> String in
+        "Hello ! C'est une requête DELETE"
     }
     
     try app.register(collection: BadgeController())

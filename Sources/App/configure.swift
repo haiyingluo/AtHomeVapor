@@ -3,6 +3,7 @@ import Fluent
 import FluentMySQLDriver
 import Vapor
 import JWT
+//import GateKeeper
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -19,18 +20,33 @@ public func configure(_ app: Application) async throws {
         database: Environment.get("DATABASE_NAME") ?? "atHome_db"
     ), as: .mysql)
     
-    // codes pour trouver les chemins des sous dossiers de Public
-    let fileMiddleware = FileMiddleware(publicDirectory: app.directory.publicDirectory)
-    app.middleware.use(fileMiddleware)
-    
-    app.middleware.use(JSONMiddleware())
-    
     guard let secret = Environment.get("SECRET_KEY") else {
         fatalError("No SECRET_KEY environment variable set")
     }
     
     let hmacKey = HMACKey(from: Data(secret.utf8))
     await app.jwt.keys.add(hmac: hmacKey, digestAlgorithm: .sha256)
+    
+    // codes pour trouver les chemins des sous dossiers de Public
+    let fileMiddleware = FileMiddleware(publicDirectory: app.directory.publicDirectory)
+    app.middleware.use(fileMiddleware)
+    
+    let corsConfiguration = CORSMiddleware.Configuration(
+    allowedOrigin : .all,
+    allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS],
+    allowedHeaders: [.accept, .authorization, .contentType, .origin],
+    cacheExpiration: 800
+    )
+    
+    let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+    // Ajout du middleware CORS à l'application
+    app.middleware.use(corsMiddleware)
+    
+//    app.caches.use(.memory)
+//    app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
+//    app.middleware.user(GatekeeperMiddleware())
+    
+    app.middleware.use(JSONMiddleware())
     
     try routes(app)
 }

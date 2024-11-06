@@ -26,7 +26,7 @@ struct UserController: RouteCollection {
             user.get(":email", use: getUserByEmail)
         }
         
-        authGroupToken.group(":userID") { user in
+        users.group(":userID") { user in
             user.get(use: getUserById)
             user.delete(use: delete)
             user.put(use: update)
@@ -41,9 +41,12 @@ struct UserController: RouteCollection {
     @Sendable func create(req: Request) async throws -> HTTPStatus {
         let user = try req.content.decode(User.self)
         
+        if !user.email.isValidEmail() {
+            throw Abort(.badRequest, reason: "Invalid email")
+        }
+        
         if user.password.count < 8 {
-            print("Error : Password too short")
-            return .badRequest
+            throw Abort(.badRequest, reason: "Password too short")
         }
         
         user.password = try Bcrypt.hash(user.password)
@@ -57,6 +60,9 @@ struct UserController: RouteCollection {
             User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
         }
+        
+        print(user.toDTO())
+        
         return user.toDTO()
     }
     
