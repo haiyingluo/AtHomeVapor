@@ -43,7 +43,7 @@ public func configure(_ app: Application) async throws {
     app.middleware.use(corsMiddleware)
     
     app.caches.use(.memory)
-    app.gatekeeper.config = .init(maxRequests: 5, per: .minute)
+    app.gatekeeper.config = .init(maxRequests: 100, per: .minute)
     app.middleware.use(GatekeeperMiddleware())
     
     app.middleware.use(JSONMiddleware())
