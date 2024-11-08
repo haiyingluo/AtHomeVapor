@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "AtHomeVapor",
     platforms: [
-       .macOS(.v13)
+        .macOS(.v13)
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
@@ -19,6 +19,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0-rc"),
         // Gatekeeper
         .package(url: "https://github.com/nodes-vapor/gatekeeper.git", from: "4.0.0"),
+        // JWTDecode
+        .package(url: "https://github.com/auth0/JWTDecode.swift", .upToNextMajor(from: "3.2.0")),
     ],
     targets: [
         .executableTarget(
@@ -31,6 +33,7 @@ let package = Package(
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "JWT", package: "jwt"),
                 .product(name: "Gatekeeper", package: "gatekeeper"),
+                .product(name: "JWTDecode", package: "JWTDecode.swift"),
             ],
             swiftSettings: swiftSettings
         ),

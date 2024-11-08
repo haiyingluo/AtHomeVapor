@@ -26,7 +26,7 @@ struct UserController: RouteCollection {
             user.get(":email", use: getUserByEmail)
         }
         
-        users.group(":userID") { user in
+        authGroupToken.group("id") { user in
             user.get(use: getUserById)
             user.delete(use: delete)
             user.put(use: update)
@@ -56,19 +56,16 @@ struct UserController: RouteCollection {
     }
     
     @Sendable func getUserById(req: Request) async throws -> UserDTO {
-        guard let user = try await
-            User.find(req.parameters.get("userID"), on: req.db) else {
+        guard let user = try await User.find(DecodeRequest().getIdFromJWT(req: req), on: req.db) else {
             throw Abort(.notFound)
         }
-        
-        print(user.toDTO())
         
         return user.toDTO()
     }
     
     @Sendable func delete(req: Request) async throws -> HTTPStatus{
         guard let user = try await
-            User.find(req.parameters.get("userID"), on: req.db) else {
+                User.find(DecodeRequest().getIdFromJWT(req: req), on: req.db) else {
             throw Abort(.notFound)
         }
         
@@ -77,8 +74,7 @@ struct UserController: RouteCollection {
     }
     
     @Sendable func update(req: Request) async throws -> UserDTO {
-       guard let userIDString = req.parameters.get("userID"),
-              let userID = UUID(uuidString: userIDString) else {
+       guard let userIDString = req.parameters.get("userID"), let userID = UUID(uuidString: userIDString) else {
            throw Abort(.badRequest, reason: "userID is not valid")
         }
         
